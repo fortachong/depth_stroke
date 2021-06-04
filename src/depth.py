@@ -4,6 +4,7 @@ from datetime import datetime
 import queue as Queue
 import threading
 
+# Depth Map using OAKD camera and depthai library
 class DepthMap:
     def __init__(self, fps=30, depth_stream_name='depth'):
         self.mono_resolution_left = dai.MonoCameraProperties.SensorResolution.THE_800_P
@@ -95,7 +96,6 @@ class MessageProcessor(threading.Thread):
     
     # Run thread
     def run(self):
-        global STOP
         while self.active:
             message = self.queue.get()
             if 'command' in message:
@@ -105,7 +105,6 @@ class MessageProcessor(threading.Thread):
                     self.process(message)
 
 if __name__ == "__main__":
-    STOP = False
     queue = Queue()
     # Process Thread
     mp = MessageProcessor(queue)
@@ -114,9 +113,10 @@ if __name__ == "__main__":
     depth = DepthMap()
     depth.start_capture(queue)
 
-    while not STOP:
+    while True:
         key = cv2.waitKey(1) 
         if key == ord('q') or key == 27:
             depth.stop_capture()
             queue.put({'command': 'stop'})
-            STOP = True
+            break
+            
