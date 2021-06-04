@@ -1,2 +1,2 @@
-# depth_stroke
-Interface + Music + CV
+# Depth Stroke
+Depth Stroke is an interface for musical interaction, using an OAKD Device from Luxonis
