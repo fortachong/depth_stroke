@@ -1,4 +1,5 @@
 import cv2
+import numpy as np
 import depthai as dai
 from datetime import datetime
 import queue as Queue
@@ -6,12 +7,39 @@ import threading
 
 # Depth Map using OAKD camera and depthai library
 class DepthMap:
-    def __init__(self, fps=30, depth_stream_name='depth'):
-        self.mono_resolution_left = dai.MonoCameraProperties.SensorResolution.THE_800_P
-        self.mono_resolution_right = dai.MonoCameraProperties.SensorResolution.THE_800_P
+    def __init__(self, fps=10, depth_stream_name='depth', cam_resolution='400'):
+        # Camera options = 400, 720, 800
+        cam_res = {
+            '400': (
+                    dai.MonoCameraProperties.SensorResolution.THE_400_P,
+                    640,
+                    400
+                ),
+            '720': (
+                    dai.MonoCameraProperties.SensorResolution.THE_720_P,
+                    1280,
+                    720
+                ),
+            '800': (
+                    dai.MonoCameraProperties.SensorResolution.THE_800_P,
+                    1280,
+                    800
+                )
+        }
+        self.mono_resolution_left = cam_res[cam_resolution][0]
+        self.mono_resolution_right = cam_res[cam_resolution][0]
+        self.res_w = cam_res[cam_resolution][1]
+        self.res_h = cam_res[cam_resolution][2]
         self.fps = fps
         self.depth_stream_name = depth_stream_name
         self.capture = False
+        self.depth_frame = None
+        self.show_display = True
+
+    def initialize_display(self):
+        if self.show_display:
+            self.depth_img = np.zeros((self.res_h, self.res_w , 3), np.uint8)        
+            cv2.imshow(self.depth_stream_name, self.depth_img)
         
     # Pipeline
     def create_pipeline(self):
@@ -59,6 +87,7 @@ class DepthMap:
         
     # Capture (loop), queue is a blocking threadsafe queue
     def start_capture(self, queue):
+        self.initialize_display()
         self.create_pipeline()
         with dai.Device(self.pipeline) as device:
             pip = device.startPipeline()
@@ -70,13 +99,29 @@ class DepthMap:
             self.capture = True
             while self.capture:
                 in_depth = q_d.get()
-                depth_frame = in_depth.getFrame()
+                self.depth_frame = in_depth.getFrame()
+                self.show(queue)
                 # Produce a map and copy to queue
                 message = {
                     'command': 'depth',
-                    'data': depth_frame
+                    'data': self.depth_frame
                 }
                 queue.put(message)
+
+    # Show display
+    def show(self, queue):
+        key = cv2.waitKey(1) 
+        if key == ord('q') or key == 27:
+            queue.put({'command': 'stop'})
+            self.stop_capture()
+            cv2.destroyAllWindows()
+
+        if self.depth_frame is not None:
+            dframe = self.depth_frame.copy()
+            depth_frame_color = cv2.normalize(dframe, None, 255, 0, cv2.NORM_INF, cv2.CV_8UC1)
+            depth_frame_color = cv2.equalizeHist(depth_frame_color)
+            depth_frame_color = cv2.applyColorMap(depth_frame_color, cv2.COLORMAP_SPRING)    
+            cv2.imshow(self.depth_stream_name, depth_frame_color)
 
     def stop_capture(self):
         self.capture = False
@@ -88,16 +133,15 @@ class MessageProcessor(threading.Thread):
             queue
         ):
         threading.Thread.__init__(self)
+        self.active = True
         self.queue = queue
 
     # Process message
     def process(self, message):
         # Normalize depth map
-        dframe = message['data'].copy()
-        depth_frame_color = cv2.normalize(dframe, None, 255, 0, cv2.NORM_INF, cv2.CV_8UC1)
-        depth_frame_color = cv2.equalizeHist(depth_frame_color)
-        depth_frame_color = cv2.applyColorMap(depth_frame_color, cv2.COLORMAP_SPRING)    
-   
+        # print(message)
+        pass
+           
     # Run thread
     def run(self):
         while self.active:
@@ -109,18 +153,11 @@ class MessageProcessor(threading.Thread):
                     self.process(message)
 
 if __name__ == "__main__":
-    queue = Queue()
+    queue = Queue.Queue()
     # Process Thread
     mp = MessageProcessor(queue)
     mp.start()
     # Depth Map
     depth = DepthMap()
     depth.start_capture(queue)
-
-    while True:
-        key = cv2.waitKey(1) 
-        if key == ord('q') or key == 27:
-            depth.stop_capture()
-            queue.put({'command': 'stop'})
-            break
-            
+    queue.put({'command': 'stop'})
