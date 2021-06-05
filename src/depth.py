@@ -91,9 +91,13 @@ class MessageProcessor(threading.Thread):
         self.queue = queue
 
     # Process message
-    def process(self, message):        
-        pass
-    
+    def process(self, message):
+        # Normalize depth map
+        dframe = message['data'].copy()
+        depth_frame_color = cv2.normalize(dframe, None, 255, 0, cv2.NORM_INF, cv2.CV_8UC1)
+        depth_frame_color = cv2.equalizeHist(depth_frame_color)
+        depth_frame_color = cv2.applyColorMap(depth_frame_color, cv2.COLORMAP_SPRING)    
+   
     # Run thread
     def run(self):
         while self.active:

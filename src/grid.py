@@ -44,7 +44,6 @@ class Grid:
                 pos_y = offset_y
                 starting_pos.append((pos_x, pos_y))
                 ending_pos.append((pos_x+self.square_size, pos_y+self.square_size))
-                print((pos_x, pos_y), (pos_x+self.square_size, pos_y+self.square_size))
                 offset_y += self.square_size + self.spacing
             offset_x += self.square_size + self.spacing
         return starting_pos, ending_pos
