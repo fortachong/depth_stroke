@@ -1,4 +1,5 @@
-
+import cv2
+import numpy as np
 
 class Grid:
     def __init__(
@@ -36,20 +37,35 @@ class Grid:
         starting_pos = []
         ending_pos = []
         offset_x = self.starting_x
-        offset_y = self.starting_y
         for _ in range(self.size):
             pos_x = offset_x
-            pos_y = offset_y
-            starting_pos.append((pos_x, pos_y))
-            ending_pos.append((pos_x+self.square_size, pos_y+self.square_size))
+            offset_y = self.starting_y
+            for _ in range(self.size):
+                pos_y = offset_y
+                starting_pos.append((pos_x, pos_y))
+                ending_pos.append((pos_x+self.square_size, pos_y+self.square_size))
+                print((pos_x, pos_y), (pos_x+self.square_size, pos_y+self.square_size))
+                offset_y += self.square_size + self.spacing
             offset_x += self.square_size + self.spacing
-            offset_y += self.square_size + self.spacing
-
         return starting_pos, ending_pos
         
 
 if __name__ == "__main__":
-    grid = Grid()
+    screen_width = 800
+    screen_height = 600
+    grid = Grid(size=16, square_size=24, screen_width=screen_width, screen_heigth=screen_height)
     spos, epos = grid.generate()
-    print(spos)
-    print(epos)
+    
+    screen = np.zeros((screen_height,screen_width,3), np.uint8)
+    color_bgr = (81,111,231)
+    for (spos_x, spos_y), (epos_x, epos_y) in zip(spos, epos):
+        cv2.rectangle(screen, (spos_x, spos_y), (epos_x, epos_y), color_bgr, -1)
+        
+    while True:
+        cv2.imshow("grid", screen)
+        key = cv2.waitKey(1) 
+        if key == ord('q') or key == 27:
+            break
+        elif key == 32:
+            # Pause on space bar
+            cv2.waitKey(0)
