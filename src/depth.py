@@ -7,7 +7,7 @@ import threading
 
 # Depth Map using OAKD camera and depthai library
 class DepthMap:
-    def __init__(self, fps=10, depth_stream_name='depth', cam_resolution='400'):
+    def __init__(self, fps=20, depth_stream_name='depth', cam_resolution='400'):
         # Camera options = 400, 720, 800
         cam_res = {
             '400': (

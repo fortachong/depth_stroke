@@ -50,8 +50,11 @@ class Grid:
         
 
 if __name__ == "__main__":
-    screen_width = 800
-    screen_height = 600
+    #screen_width = 800
+    #screen_height = 600
+    screen_width = 640
+    screen_height = 480
+    
     grid = Grid(size=16, square_size=24, screen_width=screen_width, screen_heigth=screen_height)
     spos, epos = grid.generate()
     
