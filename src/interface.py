@@ -15,6 +15,7 @@ class CVGridInterface(depth.DepthMap):
             fun='mean', 
             grid_size=16, 
             square_size=10,
+            spacing=2,
             depth_stream_name='depth', 
             cam_resolution='400'
         ):
@@ -30,11 +31,13 @@ class CVGridInterface(depth.DepthMap):
         self.screen_width = self.res_w
         self.screen_height = self.res_h
         self.square_size = square_size
+        self.spacing = spacing
         self.grid = grid.Grid(
             size=self.grid_size, 
             screen_width=self.screen_width, 
             screen_heigth=self.screen_height,
-            square_size=self.square_size
+            square_size=self.square_size,
+            spacing=self.spacing
         )
         self.spos, self.epos = self.grid.generate()
 
@@ -152,14 +155,15 @@ class MessageProcessor(threading.Thread):
                 else:
                     self.process(message)
 
-# TYPE = 'GRID'
-TYPE = 'DEPTH'
+TYPE = 'GRID'
+# TYPE = 'DEPTH'
 if __name__ == "__main__":
     # Just to show the Grid using a normal camera
     if TYPE == 'GRID':
         cam = cv2.VideoCapture(0)
         gridder = CVGridInterface(
-            square_size=24,
+            square_size=12,
+            spacing=10,
             fun='mean'
         )
 
