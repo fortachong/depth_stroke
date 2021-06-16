@@ -23,6 +23,7 @@ class CVGridInterface(depth.DepthMap):
             depth_stream_name=depth_stream_name, 
             cam_resolution=cam_resolution
         )
+        self.depth_resolution = 2**16
         # Types of aggregaton function mean, median, min, max
         self.fun = fun
         self.grid_size = grid_size
@@ -55,6 +56,7 @@ class CVGridInterface(depth.DepthMap):
         cells = []
         for (spos_x, spos_y), (epos_x, epos_y) in zip(self.spos, self.epos):
             cell_data = depth_map[spos_y:epos_y+1, spos_x:epos_x+1]
+            # print(cell_data)
             cell_agg = np.mean(cell_data)
             if self.fun == 'median':
                 cell_agg = np.median(cell_data)
@@ -68,6 +70,7 @@ class CVGridInterface(depth.DepthMap):
 
         # re-arrange cells list into a 2d map
         cells_map = np.reshape(np.array(cells), (-1, self.grid_size)).T
+        # Lists of cells, nparray 2d of cells, depth_map modified
         return cells, cells_map, dm
 
     # Capture (loop), queue is a blocking threadsafe queue
@@ -85,16 +88,16 @@ class CVGridInterface(depth.DepthMap):
             while self.capture:
                 in_depth = q_d.get()
                 self.depth_frame = in_depth.getFrame()
-                cells, _, _ = self.discretize_over_grid(self.depth_frame)
+                self.cells, self.cells_map, self.dm = self.discretize_over_grid(self.depth_frame)
 
-                self.show()
+                self.show(queue)
                 # Produce a map and copy to queue
                 message = {
                     'command': 'depth',
                     'data': self.depth_frame,
                     'spos': self.spos,
                     'epos': self.epos,
-                    'cells': cells
+                    'cells': self.cells
                 }
                 queue.put(message)
     
@@ -110,8 +113,15 @@ class CVGridInterface(depth.DepthMap):
             dframe = self.depth_frame.copy()
             depth_frame_color = cv2.normalize(dframe, None, 255, 0, cv2.NORM_INF, cv2.CV_8UC1)
             depth_frame_color = cv2.equalizeHist(depth_frame_color)
-            depth_frame_color = cv2.applyColorMap(depth_frame_color, cv2.COLORMAP_SPRING)    
+            depth_frame_color = cv2.applyColorMap(depth_frame_color, cv2.COLORMAP_HSV)    
             cv2.imshow(self.depth_stream_name, depth_frame_color)
+            # Show the discretized depth_map
+            dm_ = self.dm.copy()
+            grid_frame_color = cv2.normalize(dm_, None, 255, 0, cv2.NORM_INF, cv2.CV_8UC1)
+            grid_frame_color = cv2.equalizeHist(grid_frame_color)
+            grid_frame_color = cv2.applyColorMap(grid_frame_color, cv2.COLORMAP_OCEAN)  
+            cv2.imshow("Interface", grid_frame_color)
+            
 
     def stop_capture(self):
         self.capture = False                
@@ -131,7 +141,7 @@ class MessageProcessor(threading.Thread):
         # Normalize depth map
         # print(message)
         pass
-           
+         
     # Run thread
     def run(self):
         while self.active:
@@ -142,9 +152,8 @@ class MessageProcessor(threading.Thread):
                 else:
                     self.process(message)
 
-
-TYPE = 'GRID'
-# TYPE = 'DEPTH'
+# TYPE = 'GRID'
+TYPE = 'DEPTH'
 if __name__ == "__main__":
     # Just to show the Grid using a normal camera
     if TYPE == 'GRID':
