@@ -155,8 +155,8 @@ class MessageProcessor(threading.Thread):
                 else:
                     self.process(message)
 
-TYPE = 'GRID'
-# TYPE = 'DEPTH'
+# TYPE = 'GRID'
+TYPE = 'DEPTH'
 if __name__ == "__main__":
     # Just to show the Grid using a normal camera
     if TYPE == 'GRID':
@@ -198,7 +198,9 @@ if __name__ == "__main__":
         mp.start()
         # Depth Map
         depth = CVGridInterface(
-            square_size=24,
+            grid_size=8,
+            square_size=32,
+            spacing=4,
             fun='mean'
         )
         depth.start_capture(queue)
