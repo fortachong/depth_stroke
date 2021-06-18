@@ -6,6 +6,7 @@ import queue as Queue
 import threading
 import depth
 import grid
+import argparse
 
 # Grid Interface
 class CVGridInterface(depth.DepthMap):
@@ -155,15 +156,24 @@ class MessageProcessor(threading.Thread):
                 else:
                     self.process(message)
 
-# TYPE = 'GRID'
-TYPE = 'DEPTH'
 if __name__ == "__main__":
+    # Grid options:
+    parser = argparse.ArgumentParser()
+    parser.add_argument('--type', default="GRID", type=str, 
+                        help="Type of visualization: GRID or DEPTH")
+    args = parser.parse_args()
+
+    TYPE = 'GRID'
+    if args.type == 'DEPTH':
+        TYPE = 'DEPTH'
+
     # Just to show the Grid using a normal camera
     if TYPE == 'GRID':
         cam = cv2.VideoCapture(0)
         gridder = CVGridInterface(
-            square_size=12,
-            spacing=10,
+            grid_size=8,
+            square_size=32,
+            spacing=4,
             fun='mean'
         )
 
