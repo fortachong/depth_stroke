@@ -14,3 +14,8 @@ Currently, I'm working in capturing a depth map from the scene, and discretize i
      alt="Depth Map and Discretized Grid"
      style="float: left; margin-right: 10px;" />
 &nbsp;
+
+To execute use ```interface.py```:
+```shell
+python interface.py --type DEPTH
+```
